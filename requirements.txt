@@ -29,3 +29,4 @@ fastapi
 uvicorn
 langserve
 ipywidgets
+duckduckgo-search
