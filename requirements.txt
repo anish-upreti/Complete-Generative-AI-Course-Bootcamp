@@ -30,3 +30,5 @@ uvicorn
 langserve
 ipywidgets
 duckduckgo-search
+mysql-connector-python
+SQLAlchemy
