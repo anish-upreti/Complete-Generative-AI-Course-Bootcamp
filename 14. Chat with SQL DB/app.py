@@ -39,7 +39,7 @@ if not api_key:
 ##LLM
 llm = ChatGroq(groq_api_key = api_key, model_name = "Llama3-8b-8192", streaming=True)
 
-## connecting with database
+# database connection setup
 @st.cache_resource(ttl="3h")    # caches the database connection for 3 hours
 def configure_db(db_uri, mysql_host=None,mysql_username=None, mysql_password=None,mysql_database=None):
     if db_uri == LOCALDB:
@@ -52,6 +52,7 @@ def configure_db(db_uri, mysql_host=None,mysql_username=None, mysql_password=Non
             st.stop()
         return SQLDatabase(create_engine(f"mysql+mysqlconnector://{mysql_username}:{mysql_password}@{mysql_host}/{mysql_database}"))
 
+# connecting to the selected database
 if db_uri == MYSQL:
     db = configure_db(db_uri, mysql_host,mysql_username, mysql_password, mysql_database)
 
@@ -61,6 +62,7 @@ if db_uri == LOCALDB:
 # toolkit
 toolkit = SQLDatabaseToolkit(db=db, llm=llm)
 
+# agent
 agent = create_sql_agent(
     llm = llm,
     toolkit = toolkit,
@@ -68,18 +70,22 @@ agent = create_sql_agent(
     agent_type = AgentType.ZERO_SHOT_REACT_DESCRIPTION # The agent is a "zero-shot" agent, which means it can handle queries even if it hasn't been trained on specific tasks. It will try to react to user input based on a description and perform actions (like querying the database).
 )
 
+# initializing the chat history
 if "messages" not in st.session_state or st.sidebar.button("Clear message history"):
     st.session_state["messages"] = [{"role": "assistant", "content":"How can I help you?"}]
 
+# displaying the chat history
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
+# taking user query and processing it
 user_query = st.chat_input(placeholder = "Ask anything from the database:")
 
 if user_query:
     st.session_state.messages.append({"role":"user", "content":user_query})
     st.chat_message("user").write(user_query)
 
+    # generating assistant's response
     with st.chat_message("assistant"):
         streamlit_callback = StreamlitCallbackHandler(st.container())
         response=agent.run(user_query,callbacks=[streamlit_callback])
